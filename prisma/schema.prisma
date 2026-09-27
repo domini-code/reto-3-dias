@@ -1,0 +1,48 @@
+// Esquema de la API de facturación.
+//
+// Los importes se guardan SIEMPRE en céntimos (Int). Nunca Float.
+// Las fechas se guardan y se devuelven en UTC.
+// Los estados son strings acotados desde src/services/invoices.ts, porque
+// SQLite no tiene enums.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  taxId     String    @unique
+  email     String?
+  createdAt DateTime  @default(now())
+  invoices  Invoice[]
+}
+
+model Invoice {
+  id           String        @id @default(cuid())
+  number       String?       @unique
+  status       String        @default("DRAFT")
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  subtotalCents Int
+  taxCents     Int
+  totalCents   Int
+  issuedAt     DateTime?
+  createdAt    DateTime      @default(now())
+  lines        InvoiceLine[]
+}
+
+model InvoiceLine {
+  id             String  @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description    String
+  quantity       Int
+  unitPriceCents Int
+  totalCents     Int
+}
